@@ -9,7 +9,7 @@ in_ch = Channel.fromFilePairs(params.reads) // creating a channel for reads
 
 
 process FASTQC {
-    tag "FASTQC on reads"	
+    tag "FASTQC on {sampleID} reads"	
 	publishDir "${params.output}", mode: 'copy'
 	// Use the correct conda directive
 	conda "bioconda::fastqc=0.12.1"
@@ -27,7 +27,7 @@ process FASTQC {
 	"""
 }
 process FASTP {
-	tag "Read correction using FASTP"
+	tag "{sampleID} Read correction using FASTP"
     publishDir "${params.output}", mode: 'copy'
     cpus 4
 	debug true
@@ -47,7 +47,7 @@ process FASTP {
 }
 
 process FLASH {
-    tag "Overlapping/stitching PE reads with FLASH"
+    tag "Overlapping/stitching PE reads of {sampleID} with FLASH"
     publishDir "${params.output}", mode: 'copy'
     cpus 4
 	debug true
