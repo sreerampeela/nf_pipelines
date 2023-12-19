@@ -1,6 +1,9 @@
 // sample pipeline //
+// Installs the tools using conda (conda enabled: true in config file)
+// Accepts reads with prefix *_(1/2).(fastq/fq).gz
+// Overwrite outdir name in cli using --output parameter
 params.reads = "./*_{1,2}.{fq,fastq}.gz"
-params.output = "./testingResults5"
+//params.output = "./testingResults5"
 
 in_ch = Channel.fromFilePairs(params.reads) // creating a channel for reads
 
@@ -34,7 +37,7 @@ process FASTP {
 	tuple val(sampleID), path(reads)
 	
 	output:
-	path "*_{1,2}_trimmed.fastq.gz"
+	tuple val(sampleID), path("${sampleID}_{1,2}_trimmed.fastq.gz")
 
 	script:
 	"""
@@ -51,14 +54,14 @@ process FLASH {
     conda "bioconda::flash2"
 
     input:
-    path reads
+    tuple val(sampleID), path(reads)
 
     output:
-    path "*{extendedFrags, notCombined_1, notCombined_2}.fastq.gz"
+    tuple val(sampleID), path("${sampleID}.{extendedFrags,notCombined_1,notCombined_2}.fastq.gz")
 
     script:
     """
-    flash2 -o output -z -t $task.cpus -M 150 ${reads[0]} ${reads[1]} 
+    flash2 -o ${sampleID} -z -t $task.cpus -M 150 ${reads[0]} ${reads[1]} 
     """
 }
 
