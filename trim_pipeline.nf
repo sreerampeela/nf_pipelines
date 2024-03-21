@@ -2,11 +2,14 @@
 // Installs the tools using conda (conda enabled: true in config file)
 // Accepts reads with prefix *_(1/2).(fastq/fq).gz
 // Overwrite outdir name in cli using --output parameter
-params.reads = "./*_{1,2}.{fq,fastq}.gz"
-//params.output = "./testingResults5"
+//params.reads = "*_R{1,2}.{fq,fastq}.gz"
+params.output = "./testingResults5"
+//params.pwd = "./"
 
-in_ch = Channel.fromFilePairs(params.reads) // creating a channel for reads
-
+in_ch = Channel.fromFilePairs( "./*_R{1,2}.{fq,fastq}.gz") // creating a channel for reads
+new_ch = in_ch.toList()
+new_in = Channel.fromFilePairs("./*_trimmed_{1,2}.fastq.gz")
+new_in2 = new_in.toList()
 
 process FASTQC {
     tag "FASTQC on ${sampleID} reads"	
@@ -23,6 +26,7 @@ process FASTQC {
 
 	script:
 	"""
+	echo ${reads}
 	fastqc -q ${reads}
 	"""
 }
@@ -37,11 +41,11 @@ process FASTP {
 	tuple val(sampleID), path(reads)
 	
 	output:
-	tuple val(sampleID), path("${sampleID}_{1,2}_trimmed.fastq.gz")
+	tuple val(sampleID), path("${sampleID}_trimmed_{1,2}.fastq.gz")
 
 	script:
 	"""
-	fastp -i ${reads[0]} -I ${reads[1]} -o ${sampleID}_1_trimmed.fastq.gz -O ${sampleID}_2_trimmed.fastq.gz
+	fastp -i ${reads[0]} -I ${reads[1]} -o ${sampleID}_trimmed_1.fastq.gz -O ${sampleID}_trimmed_2.fastq.gz
 	"""
 
 }
@@ -53,7 +57,8 @@ process FLASH {
 	debug true
     conda "bioconda::flash2"
 
-    input:
+    
+	input:
     tuple val(sampleID), path(reads)
 
     output:
@@ -61,16 +66,17 @@ process FLASH {
 
     script:
     """
+    echo $reads
     flash2 -o ${sampleID} -z -t $task.cpus -M 150 ${reads[0]} ${reads[1]} 
     """
 }
 
 
 workflow {
-	// in_ch.view()
-	fastqc_ch = FASTQC(in_ch)
-    fastp_ch = FASTP(in_ch)
-	fastp_ch.view()
-    flash_ch = FLASH(fastp_ch)
-    flash_ch.view()
+	 in_ch.view()
+	 fastqc_ch = FASTQC(in_ch)
+	 fastp_ch = FASTP(in_ch)
+	 fastp_ch.view()
+	 flash_ch = FLASH(fastp_ch)
+	 flash_ch.view()
 	}
